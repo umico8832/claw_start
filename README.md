@@ -1,8 +1,11 @@
-# 🛡️ OpenClaw Smart Watchdog
+<img width="597" height="385" alt="iShot 2026-02-12 20 15 02" src="https://github.com/user-attachments/assets/b4344f7a-e0b1-4390-9ddf-722f762b5a51" /># 🛡️ OpenClaw Smart Watchdog
 
 > **专为 macOS & Clash 环境优化的 OpenClaw 智能守护脚本**
 > 
 > *不再担心 OpenClaw 假死、断网或日志爆炸。全自动托管，极致稳定。*
+<img width="597" height="385" alt="image" src="https://github.com/user-attachments/assets/ea42cc58-7835-4969-8c1b-e53d3ea59c31" />
+<img width="597" height="385" alt="image" src="https://github.com/user-attachments/assets/3e7f988f-8316-4721-bec1-e32ae214bff9" />
+
 
 ## 📖 简介 (Introduction)
 
