@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # === OpenClaw Watchdog ===
@@ -61,23 +62,28 @@ LAST_LINE_COUNT=$(wc -l < "$LOG_FILE" | tr -d ' ')  #   读取 $LOG_FILE 当前�
 
 
 
-# === 网络检测函数 ===
+# === 网络检测函数  ===
 check_network() {
-    # 1. 第一道防线：物理检测
-    # 检查系统网卡列表里有没有 "utun" (Clash 的 Tun 模式启动后一定有 utun 关键词)
-    local interfaces=$(ifconfig -l)
-    if [[ "$interfaces" != *"utun"* ]]; then
-        return 1 # 没找到 utun 网卡，直接判死刑，不需要再 curl 了
+    # 1. 第一道防线：物理/国内网络检测
+    local cn_code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 --max-time 3 "http://connect.rom.miui.com/generate_204")
+    if [ "$cn_code" != "204" ]; then
+        local baidu_code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 --max-time 3 "https://www.baidu.com")
+        if [ "$baidu_code" != "200" ]; then
+            return 1 # 物理断网
+        fi
     fi
 
-    # 2. 第二道防线：强制直连检测
-    # --noproxy "*": 告诉 curl 忽略终端里所有的 http_proxy 环境变量
-    # 这样它就必须走系统路由表。如果 Tun 没开，这行命令就不会再误报 204 了。
-    local code=$(curl --noproxy "*" -s -o /dev/null -w "%{http_code}" --connect-timeout 3 --max-time 5 "http://www.google.com/generate_204")
+    # 2. 第二道防线：墙外 IP 连通性检测
+    # 逻辑：8.8.8.8 在国内必不通。如果通了，说明 Tun 正在工作。
+    # --noproxy "*": 确保是 Tun 网卡在处理路由，而不是依赖环境变量
+    # https://8.8.8.8: 访问 Google DNS 的 HTTPS 接口
+    local google_check=$(curl --noproxy "*" -s -o /dev/null -w "%{http_code}" --connect-timeout 3 --max-time 5 "https://8.8.8.8")
     
-    if [ "$code" == "204" ]; then
-        return 0
+    # 8.8.8.8 作为一个接口，通常返回 200 或 404 (如果路径不对)，但只要不是 000 (连接失败)，就说明通了
+    if [ "$google_check" != "000" ]; then
+        return 0 # 成功翻墙
     else
+        echo "⚠️  国内网络正常，但无法连接 Google IP (代理未生效)"
         return 1
     fi
 }
@@ -134,7 +140,7 @@ while true; do
             
             # [检查 2] 运行时掉线检测
             if ! check_network; then
-                echo "📉 [$(date +%T)] 运行时检测到 Tun 断开/网络中断 -> 停止服务!"
+                echo "📉 [$(date +%T)] 运行时检测到网络中断 -> 服务停止..."
                 kill_port_holder
                 break
             fi
