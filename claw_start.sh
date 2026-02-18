@@ -6,7 +6,7 @@
 # -------------------------------------- 用户配置区 --------------------------------------
 TARGET_PORT=18789   # 如果你改了 OpenClaw 端口，只需要改这里
 LOG_FILE="/tmp/openclaw_monitor.log"    # 日志文件路径
-ERROR_KEYWORDS="channel exited|ECONNRESET|WebSocket Error|408 Request Time-out|ETIMEDOUT|getaddrinfo ENOTFOUND|Precondition Required|Connection Terminated"
+ERROR_KEYWORDS="channel exited|ECONNRESET|WebSocket Error|408 Request Time-out|ETIMEDOUT|getaddrinfo ENOTFOUND|Connection Terminated"
 # --------------------------------------------------------------------------------------
 
 touch "$LOG_FILE"   # 确保日志文件存在，避免后续写入时出错。
@@ -234,7 +234,11 @@ while true; do
         #    - 跳出循环，交由外层逻辑完成重启
 
         # 看门狗核心：检测到错误日志时的处理逻辑
-        if echo "$NEW_LOG_CONTENT" | grep -E -q "$ERROR_KEYWORDS"; then
+        
+        FILTERED_CONTENT=$(echo "$NEW_LOG_CONTENT" | grep -v -i "retry")
+
+        # 然后只在剩下的内容里找错误
+        if echo "$FILTERED_CONTENT" | grep -E -q "$ERROR_KEYWORDS"; then
             
             # 情况 A：日志报错，先测一下网络
             if check_network; then
